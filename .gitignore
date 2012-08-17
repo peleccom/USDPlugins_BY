@@ -1,0 +1,16 @@
+*.bak
+*.html
+*.lst
+*.log
+*.ini
+*.cfg
+*.dcu
+*.~*~
+*.~*
+*.local
+*.identcache
+__history
+*.drc
+*.map
+*.dll
+bin/*
