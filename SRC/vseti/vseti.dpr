@@ -10,9 +10,9 @@ uses
 
 const
   PluginName = 'Vseti.by';
-  PluginVer = '1.0';
+  PluginVer = '1.1a';
   Author='Peleccom';
-  RealiseDate='2011';
+  RealiseDate='2012';
   SW_HIDE = 0;
 
 
@@ -54,6 +54,9 @@ type
   TSetOption = procedure(const Plugin, Option, Value: PChar); stdcall;
   TGetPicSize = procedure (const fn: PChar; const CallBack: TPlgCallBack); stdcall;
 
+  // Ставит кукисы (mode=0 добавление, 1- замена) 
+  TSetCookie = procedure (const AString: PChar; const mode: byte); stdcall;
+
 
 var
   URLGet: TURLGet;
@@ -75,6 +78,8 @@ var
   ArrToPic: TArrToPic;
   GetProgClipboard: TGetClipboard;
   ShowHAWindow: TShowHAWindow;
+
+  SetCookie : TSetCookie;
   // -----------------------------------------------------------------------------------------------
   // Начало основного кода --------------------------------------------------------------------------
   // -----------------------------------------------------------------------------------------------
@@ -221,6 +226,7 @@ begin
   @ArrToPic:=GetFuncAddr('ArrToPic');
   @SetOptionInPRG := GetFuncAddr('SetOption');
   @SimpleOptions := GetFuncAddr('SimpleOptions');
+  @SetCookie := GetFuncAddr('SetCookie');
   FDebug := Debug = 1; // Режим отладки да/нет
   WorkDir := StrPas(AWorkDir); // Рабочий каталог (например для сохранения файлов при отладке)
 
@@ -253,27 +259,34 @@ end;
 
 function Login(mail,pass:String):Boolean;
 var
-s:Ansistring;
+s, newcookie:Ansistring;
 regexpr:TregExpr;
 begin
 result:=False;
-SaveToLog(Pchar(mail+':'+Pass));
 s:=Get('http://vseti.by/');
+s := Post('http://login.vseti.by/?act=login','email='+mail+#10+'password='+pass+#10+'jsc=') ;
+SaveToFile(Pchar(WorkDir+PluginName+'1.html'), Pchar(s));
 regexpr:=tregexpr.create();
-regexpr.Expression:='var jsc =\s*(.*?);';
-SaveToFile(Pchar(WorkDir+PluginName+'1.html'),Pchar(s));
+regexpr.Expression:='setCookieEx\('+#39+'(.+?)'+#39+',.?'+#39+'(.*?)'+#39+',.?(\d+)\)';
+if FDebug then SaveToLog(Pchar('Trying regexpr :'+regexpr.Expression+#13));
+newcookie := '';
 if regexpr.Exec(s) then
-    begin
-    s:=regexpr.Match[1];
-    SaveToLog(Pchar(s));
-    s:=js.Run('var n='+s+';'+#13+'n');
-    SaveToLog(Pchar(s));
-    end
+  begin
+    repeat
+    if FDebug then SaveToLog(Pchar('Found regexpr'));
+    newcookie := newcookie + 'vs'+regexpr.Match[1]+'='
+          + regexpr.Match[2] + '; ';
+    until not regexpr.ExecNext();
+    if FDebug then SaveToLog(Pchar(newcookie));
+    SetCookie(Pchar(newcookie),1);
+  end
 else
     Exit;
-s:=Post('http://vseti.by/login.php','op=a_login_attempt'+#10+'email='+mail+#10+'pass='+pass+#10+'jsc='+s+#10+'persistent=0') ;
-SaveToFile(Pchar(WorkDir+PluginName+'2.html'),Pchar(s));
-if s='rstart.php' then
+
+s := Get('http://vseti.by/start.php');
+s := UTF8Decode(s);
+SaveToFile(Pchar(WorkDir+PluginName+'2.html'), Pchar(s));
+if Pos('Главная', s) > 0 then
   result:=True;
 end;
 
