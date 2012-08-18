@@ -148,10 +148,8 @@ procedure PlgGetDirectLink(const FreeSpaceByLnk: PChar); stdcall;
 var
   s: AnsiString;
   n: Integer;
-  s1: string;
   login, passw: AnsiString;
   PostStr: AnsiString;
-  Loginned: Boolean;
   regexpr:TregExpr;
 begin
   SaveToLog(PChar('Plugin '+PluginName+' ver. '+PluginVer));
@@ -181,13 +179,11 @@ begin
       if pos(AnsiToUtf8('Выйти</'), s) > 0 then
     begin
       SaveToLog(PChar('Freespace.by Loginned' + #13#10));
-      Loginned := true;
     end
 
     else
     begin
       SaveToLog(PChar('Freespace.by Not Loggined' + #13#10));
-      Loginned := false;
     end;
   end;
 
@@ -258,7 +254,7 @@ begin
   procedure PlgGetAbout; stdcall;
   begin
     ShowMsg(PChar(PluginName + ' plugin'#10'Version ' + PluginVer +
-          #10'(c) Peleccom 2010 ©'), 0);
+          #10'(c) Peleccom 2012 ©'), 0);
   end;
 
   // Вызывается перед выгрузкой плагина
